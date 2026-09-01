@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teachers Day QR Scanner</title>
+
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      text-align: center;
+      color: #222;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    #reader {
+      width: 100%;
+      background: white;
+      border-radius: 15px;
+      overflow: hidden;
+      margin-bottom: 15px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 14px 22px;
+      font-size: 17px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    #startBtn {
+      background: #1976d2;
+      color: white;
+    }
+
+    #stopBtn {
+      background: #555;
+      color: white;
+    }
+
+    #result {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 15px;
+      background: white;
+      display: none;
+    }
+
+    .success {
+      border: 4px solid #2e7d32;
+    }
+
+    .already {
+      border: 4px solid #d32f2f;
+    }
+
+    .invalid {
+      border: 4px solid #f57c00;
+    }
+
+    .icon {
+      font-size: 55px;
+    }
+
+    .name {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+
+    .className {
+      font-size: 20px;
+      color: #555;
+    }
+
+    .message {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 12px;
+    }
+
+    .loading {
+      color: #555;
+      font-size: 18px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>🎫 Teachers Day</h1>
+  <div class="subtitle">Student QR Verification</div>
+
+  <div id="reader"></div>
+
+  <button id="startBtn">📷 Start Camera</button>
+  <button id="stopBtn" style="display:none;">⏹ Stop Camera</button>
+
+  <div id="result"></div>
+
+</div>
+
+<script>
+
+  // ==========================================================
+  // IMPORTANT:
+  // Replace the URL below with YOUR Google Apps Script Web App URL
+  // ==========================================================
+
+  const BACKEND_URL =
+  "https://script.google.com/macros/s/AKfycbwp1CIZ5tVUa3MyzNsowQLkH1pGjrkW3r-NN2g6_roN6Q33-L-21AqkLmd456wfnen0yw/exec";
+
+
+  let scanner = null;
+  let scanning = false;
+  let processing = false;
+
+
+  const resultBox = document.getElementById("result");
+  const startBtn = document.getElementById("startBtn");
+  const stopBtn = document.getElementById("stopBtn");
+
+
+  // ----------------------------------------------------------
+  // START CAMERA
+  // ----------------------------------------------------------
+
+  async function startCamera() {
+
+    if (scanning) return;
+
+    resultBox.style.display = "none";
+
+    scanner = new Html5Qrcode("reader");
+
+    try {
+
+      await scanner.start(
+        { facingMode: "environment" },
+
+        {
+          fps: 10,
+          qrbox: {
+            width: 250,
+            height: 250
+          }
+        },
+
+        onScanSuccess,
+
+        onScanFailure
+      );
+
+      scanning = true;
+
+      startBtn.style.display = "none";
+      stopBtn.style.display = "inline-block";
+
+    } catch (error) {
+
+      showError(
+        "Camera could not start.",
+        "Please allow camera permission in Chrome and try again."
+      );
+
+      console.error(error);
+    }
+  }
+
+
+  // ----------------------------------------------------------
+  // STOP CAMERA
+  // ----------------------------------------------------------
+
+  async function stopCamera() {
+
+    if (!scanner || !scanning) return;
+
+    try {
+      await scanner.stop();
+      scanner.clear();
+    } catch (error) {
+      console.error(error);
+    }
+
+    scanning = false;
+
+    startBtn.style.display = "inline-block";
+    stopBtn.style.display = "none";
+  }
+
+
+  // ----------------------------------------------------------
+  // QR SCANNED
+  // ----------------------------------------------------------
+
+  async function onScanSuccess(decodedText) {
+
+    if (processing) return;
+
+    processing = true;
+
+    const qrId = decodedText.trim();
+
+    await stopCamera();
+
+    showLoading(qrId);
+
+    verifyQR(qrId);
+  }
+
+
+  function onScanFailure(error) {
+    // Ignore normal scanning failures.
+  }
+
+
+  // ----------------------------------------------------------
+  // SEND QR TO GOOGLE APPS SCRIPT
+  // ----------------------------------------------------------
+
+  function verifyQR(qrId) {
+
+    const callbackName =
+      "qrCallback_" + Date.now();
+
+    window[callbackName] = function(data) {
+
+      delete window[callbackName];
+
+      if (data.result === "SUCCESS") {
+
+        showSuccess(data);
+
+      } else if (data.result === "ALREADY USED") {
+
+        showAlreadyUsed(data);
+
+      } else if (data.result === "INVALID") {
+
+        showInvalid(data);
+
+      } else {
+
+        showError(
+          "Error",
+          data.message || "Something went wrong."
+        );
+      }
+
+      processing = false;
+    };
+
+
+    const script = document.createElement("script");
+
+    script.src =
+      BACKEND_URL +
+      "?qr=" +
+      encodeURIComponent(qrId) +
+      "&callback=" +
+      callbackName;
+
+    script.onerror = function() {
+
+      delete window[callbackName];
+
+      showError(
+        "Connection Error",
+        "Could not connect to the Google server."
+      );
+
+      processing = false;
+    };
+
+    document.body.appendChild(script);
+
+    setTimeout(function() {
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
+    }, 10000);
+  }
+
+
+  // ----------------------------------------------------------
+  // SUCCESS
+  // ----------------------------------------------------------
+
+  function showSuccess(data) {
+
+    resultBox.className = "success";
+
+    resultBox.innerHTML = `
+      <div class="icon">🟢</div>
+      <div class="message">SUCCESS</div>
+
+      <div class="name">
+        ${escapeHTML(data.studentName)}
+      </div>
+
+      <div class="className">
+        Class: ${escapeHTML(data.studentClass)}
+      </div>
+
+      <div class="message">
+        🎫 Coupon Accepted
+      </div>
+    `;
+
+    resultBox.style.display = "block";
+
+    setTimeout(startCamera, 2500);
+  }
+
+
+  // ----------------------------------------------------------
+  // ALREADY USED
+  // ----------------------------------------------------------
+
+  function showAlreadyUsed(data) {
+
+    resultBox.className = "already";
+
+    resultBox.innerHTML = `
+      <div class="icon">🔴</div>
+      <div class="message">ALREADY USED</div>
+
+      <div class="name">
+        ${escapeHTML(data.studentName)}
+      </div>
+
+      <div class="className">
+        Class: ${escapeHTML(data.studentClass)}
+      </div>
+
+      <div class="message">
+        This coupon has already been used.
+      </div>
+
+      <p>
+        Previous scan:<br>
+        ${escapeHTML(String(data.usedAt || ""))}
+      </p>
+    `;
+
+    resultBox.style.display = "block";
+
+    setTimeout(startCamera, 3000);
+  }
+
+
+  // ----------------------------------------------------------
+  // INVALID QR
+  // ----------------------------------------------------------
+
+  function showInvalid(data) {
+
+    resultBox.className = "invalid";
+
+    resultBox.innerHTML = `
+      <div class="icon">⚠️</div>
+      <div class="message">INVALID QR</div>
+
+      <p>
+        QR ID:
+        <strong>${escapeHTML(data.qrId || "")}</strong>
+      </p>
+
+      <p>Student record not found.</p>
+    `;
+
+    resultBox.style.display = "block";
+
+    setTimeout(startCamera, 3000);
+  }
+
+
+  // ----------------------------------------------------------
+  // LOADING
+  // ----------------------------------------------------------
+
+  function showLoading(qrId) {
+
+    resultBox.className = "";
+
+    resultBox.innerHTML = `
+      <div class="icon">🔍</div>
+      <div class="loading">
+        Checking QR...
+      </div>
+
+      <p>${escapeHTML(qrId)}</p>
+    `;
+
+    resultBox.style.display = "block";
+  }
+
+
+  // ----------------------------------------------------------
+  // ERROR
+  // ----------------------------------------------------------
+
+  function showError(title, message) {
+
+    resultBox.className = "invalid";
+
+    resultBox.innerHTML = `
+      <div class="icon">⚠️</div>
+      <div class="message">
+        ${escapeHTML(title)}
+      </div>
+
+      <p>
+        ${escapeHTML(message)}
+      </p>
+    `;
+
+    resultBox.style.display = "block";
+  }
+
+
+  // ----------------------------------------------------------
+  // SECURITY: ESCAPE TEXT
+  // ----------------------------------------------------------
+
+  function escapeHTML(value) {
+
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+
+  startBtn.addEventListener(
+    "click",
+    startCamera
+  );
+
+  stopBtn.addEventListener(
+    "click",
+    stopCamera
+  );
+
+</script>
+
+</body>
+</html>
