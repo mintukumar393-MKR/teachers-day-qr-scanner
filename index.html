@@ -1,477 +1,699 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teachers Day QR Scanner</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<title>Teachers Day QR Verification</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      text-align: center;
-      color: #222;
-    }
+<style>
+* {
+  box-sizing: border-box;
+}
 
-    .container {
-      max-width: 500px;
-      margin: auto;
-      padding: 20px;
-    }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f7fb;
+  color: #222;
+  text-align: center;
+  min-height: 100vh;
+}
 
-    h1 {
-      margin-bottom: 5px;
-    }
+.container {
+  width: 100%;
+  max-width: 650px;
+  margin: auto;
+  padding: 25px 18px 80px;
+}
 
-    .subtitle {
-      color: #666;
-      margin-bottom: 20px;
-    }
+h1 {
+  margin: 5px 0;
+  font-size: 34px;
+}
 
-    #reader {
-      width: 100%;
-      background: white;
-      border-radius: 15px;
-      overflow: hidden;
-      margin-bottom: 15px;
-    }
+.subtitle {
+  font-size: 20px;
+  color: #666;
+  margin-bottom: 25px;
+}
 
-    button {
-      border: none;
-      border-radius: 10px;
-      padding: 14px 22px;
-      font-size: 17px;
-      cursor: pointer;
-      margin: 5px;
-    }
+.watermark {
+  position: fixed;
+  bottom: 12px;
+  right: 15px;
+  font-size: 13px;
+  color: #999;
+  opacity: 0.7;
+  pointer-events: none;
+}
 
-    #startBtn {
-      background: #1976d2;
-      color: white;
-    }
+button {
+  border: none;
+  border-radius: 12px;
+  padding: 15px 28px;
+  font-size: 18px;
+  cursor: pointer;
+  margin: 8px;
+}
 
-    #stopBtn {
-      background: #555;
-      color: white;
-    }
+.start-btn {
+  background: #1976d2;
+  color: white;
+}
 
-    #result {
-      margin-top: 20px;
-      padding: 20px;
-      border-radius: 15px;
-      background: white;
-      display: none;
-    }
+.stop-btn {
+  background: #555;
+  color: white;
+}
 
-    .success {
-      border: 4px solid #2e7d32;
-    }
+.next-btn {
+  background: #2e7d32;
+  color: white;
+}
 
-    .already {
-      border: 4px solid #d32f2f;
-    }
+#reader {
+  width: 100%;
+  max-width: 600px;
+  margin: 20px auto;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #111;
+}
 
-    .invalid {
-      border: 4px solid #f57c00;
-    }
+#result {
+  display: none;
+  margin: 25px auto;
+  padding: 25px 18px;
+  border-radius: 18px;
+  background: white;
+  border: 5px solid #2e7d32;
+}
 
-    .icon {
-      font-size: 55px;
-    }
+#result.error {
+  border-color: #d32f2f;
+}
 
-    .name {
-      font-size: 28px;
-      font-weight: bold;
-      margin: 10px 0;
-    }
+#result.warning {
+  border-color: #f57c00;
+}
 
-    .className {
-      font-size: 20px;
-      color: #555;
-    }
+.icon {
+  font-size: 55px;
+  margin-bottom: 8px;
+}
 
-    .message {
-      font-size: 20px;
-      font-weight: bold;
-      margin-top: 12px;
-    }
+.result-title {
+  font-size: 30px;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
 
-    .loading {
-      color: #555;
-      font-size: 18px;
-    }
-  </style>
+.student-name {
+  font-size: 30px;
+  font-weight: bold;
+  margin: 8px;
+}
+
+.details {
+  font-size: 19px;
+  line-height: 1.7;
+  color: #444;
+}
+
+.message {
+  font-size: 19px;
+  margin-top: 15px;
+}
+
+#nextButton {
+  display: none;
+}
+
+#loading {
+  display: none;
+  margin: 15px;
+  font-size: 17px;
+  color: #555;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+
+  .container {
+    padding-top: 20px;
+  }
+
+  h1 {
+    font-size: 32px;
+  }
+
+  .subtitle {
+    font-size: 18px;
+  }
+
+  #reader {
+    width: 100%;
+  }
+
+  .student-name {
+    font-size: 27px;
+  }
+
+  .result-title {
+    font-size: 27px;
+  }
+}
+</style>
 </head>
 
 <body>
 
 <div class="container">
 
-  <h1>🎫 Teachers Day</h1>
-  <div class="subtitle">Student QR Verification</div>
+  <h1>🎟️ Teachers Day</h1>
+
+  <div class="subtitle">
+    Student QR Verification
+  </div>
+
+  <button id="startButton"
+          class="start-btn"
+          onclick="startScanner()">
+    📷 Start Camera
+  </button>
+
+  <button id="stopButton"
+          class="stop-btn hidden"
+          onclick="stopScanner()">
+    ⏹️ Stop Camera
+  </button>
 
   <div id="reader"></div>
 
-  <button id="startBtn">📷 Start Camera</button>
-  <button id="stopBtn" style="display:none;">⏹ Stop Camera</button>
+  <div id="loading">
+    🔄 Verifying QR code...
+  </div>
 
-  <div id="result"></div>
+  <div id="result">
+
+    <div id="resultIcon" class="icon"></div>
+
+    <div id="resultTitle" class="result-title"></div>
+
+    <div id="studentName" class="student-name"></div>
+
+    <div id="studentDetails" class="details"></div>
+
+    <div id="resultMessage" class="message"></div>
+
+    <button id="nextButton"
+            class="next-btn"
+            onclick="nextScan()">
+      ➡️ Next Scan
+    </button>
+
+  </div>
 
 </div>
 
+<div class="watermark">
+  HeavyDukh
+</div>
+
+
 <script>
 
-  // ==========================================================
-  // IMPORTANT:
-  // Replace the URL below with YOUR Google Apps Script Web App URL
-  // ==========================================================
+/* =========================================================
+   GOOGLE APPS SCRIPT BACKEND
+   ========================================================= */
 
-  const BACKEND_URL =
-  "https://script.google.com/macros/s/AKfycbwp1CIZ5tVUa3MyzNsowQLkH1pGjrkW3r-NN2g6_roN6Q33-L-21AqkLmd456wfnen0yw/exec";
-
-
-  let scanner = null;
-  let scanning = false;
-  let processing = false;
+const BACKEND_URL =
+"https://script.google.com/macros/s/AKfycbwp1CIZ5tVUa3MyzNsowQLkH1pGjrkW3r-NN2g6_roN6Q33-L-21AqkLmd456wfnen0yw/exec";
 
 
-  const resultBox = document.getElementById("result");
-  const startBtn = document.getElementById("startBtn");
-  const stopBtn = document.getElementById("stopBtn");
+/* =========================================================
+   SCANNER VARIABLES
+   ========================================================= */
+
+let scanner = null;
+let scanning = false;
+let processing = false;
 
 
-  // ----------------------------------------------------------
-  // START CAMERA
-  // ----------------------------------------------------------
+/* =========================================================
+   START CAMERA
+   ========================================================= */
 
-  async function startCamera() {
+function startScanner() {
 
-    if (scanning) return;
+  if (scanning) return;
 
-    resultBox.style.display = "none";
+  document.getElementById("result").style.display = "none";
+  document.getElementById("nextButton").style.display = "none";
 
-    scanner = new Html5Qrcode("reader");
+  document.getElementById("startButton")
+    .classList.add("hidden");
+
+  document.getElementById("stopButton")
+    .classList.remove("hidden");
+
+  scanner = new Html5Qrcode("reader");
+
+  scanner.start(
+    { facingMode: "environment" },
+
+    {
+      fps: 10,
+      qrbox: {
+        width: 250,
+        height: 250
+      }
+    },
+
+    onScanSuccess,
+
+    function(errorMessage) {
+      // Ignore normal scanning errors
+    }
+
+  ).then(function() {
+
+    scanning = true;
+
+  }).catch(function(error) {
+
+    console.error(error);
+
+    alert(
+      "Camera could not start.\n\n" +
+      "Please allow camera permission and try again."
+    );
+
+    resetScannerButtons();
+
+  });
+}
+
+
+/* =========================================================
+   QR SCANNED
+   ========================================================= */
+
+function onScanSuccess(decodedText) {
+
+  if (processing) return;
+
+  processing = true;
+
+  stopScanner();
+
+  const qrId = decodedText.trim();
+
+  if (!qrId) {
+
+    showResult(
+      "error",
+      "❌",
+      "INVALID QR",
+      "",
+      "",
+      "The QR code is empty or invalid."
+    );
+
+    return;
+  }
+
+  verifyQR(qrId);
+}
+
+
+/* =========================================================
+   VERIFY QR WITH GOOGLE APPS SCRIPT
+   ========================================================= */
+
+function verifyQR(qrId) {
+
+  document.getElementById("loading").style.display = "block";
+
+  const callbackName =
+    "qrCallback_" + Date.now();
+
+  window[callbackName] = function(data) {
+
+    document.getElementById("loading").style.display = "none";
 
     try {
 
-      await scanner.start(
-        { facingMode: "environment" },
-
-        {
-          fps: 10,
-          qrbox: {
-            width: 250,
-            height: 250
-          }
-        },
-
-        onScanSuccess,
-
-        onScanFailure
-      );
-
-      scanning = true;
-
-      startBtn.style.display = "none";
-      stopBtn.style.display = "inline-block";
+      processResult(data);
 
     } catch (error) {
 
-      showError(
-        "Camera could not start.",
-        "Please allow camera permission in Chrome and try again."
+      console.error(error);
+
+      showResult(
+        "error",
+        "⚠️",
+        "ERROR",
+        "",
+        "",
+        "Could not process the server response."
       );
-
-      console.error(error);
-    }
-  }
-
-
-  // ----------------------------------------------------------
-  // STOP CAMERA
-  // ----------------------------------------------------------
-
-  async function stopCamera() {
-
-    if (!scanner || !scanning) return;
-
-    try {
-      await scanner.stop();
-      scanner.clear();
-    } catch (error) {
-      console.error(error);
     }
 
-    scanning = false;
+    delete window[callbackName];
 
-    startBtn.style.display = "inline-block";
-    stopBtn.style.display = "none";
+    const script =
+      document.getElementById(callbackName);
+
+    if (script) {
+      script.remove();
+    }
+  };
+
+
+  const script = document.createElement("script");
+
+  script.id = callbackName;
+
+  script.src =
+    BACKEND_URL +
+    "?qrId=" +
+    encodeURIComponent(qrId) +
+    "&callback=" +
+    callbackName +
+    "&_=" +
+    Date.now();
+
+  script.onerror = function() {
+
+    document.getElementById("loading").style.display = "none";
+
+    showResult(
+      "error",
+      "⚠️",
+      "CONNECTION ERROR",
+      "",
+      "",
+      "Unable to connect to the verification server."
+    );
+
+    delete window[callbackName];
+
+    script.remove();
+  };
+
+  document.body.appendChild(script);
+}
+
+
+/* =========================================================
+   PROCESS SERVER RESPONSE
+   ========================================================= */
+
+function processResult(data) {
+
+  console.log("Server response:", data);
+
+  const name =
+    data.studentName || "";
+
+  const studentClass =
+    data.studentClass || "";
+
+  const section =
+    data.section || "";
+
+  const qrId =
+    data.qrId || "";
+
+  const coupon =
+    data.coupon || "";
+
+  const usedAt =
+    data.usedAt || "";
+
+  const message =
+    data.message || "";
+
+
+  /* ---------- SUCCESS ---------- */
+
+  if (
+    data.success === true &&
+    data.result === "SUCCESS"
+  ) {
+
+    showResult(
+      "success",
+      "✅",
+      "COUPON ACCEPTED",
+      name,
+      buildDetails(
+        qrId,
+        studentClass,
+        section,
+        coupon
+      ),
+      message || "Coupon accepted successfully."
+    );
+
+    return;
   }
 
 
-  // ----------------------------------------------------------
-  // QR SCANNED
-  // ----------------------------------------------------------
+  /* ---------- ALREADY USED ---------- */
 
-  async function onScanSuccess(decodedText) {
+  if (
+    data.result === "ALREADY USED"
+  ) {
 
-    if (processing) return;
+    let previousScan = "";
 
-    processing = true;
+    if (usedAt) {
 
-    const qrId = decodedText.trim();
+      try {
 
-    await stopCamera();
+        previousScan =
+          new Date(usedAt).toLocaleString();
 
-    showLoading(qrId);
+      } catch(e) {
 
-    verifyQR(qrId);
-  }
-
-
-  function onScanFailure(error) {
-    // Ignore normal scanning failures.
-  }
-
-
-  // ----------------------------------------------------------
-  // SEND QR TO GOOGLE APPS SCRIPT
-  // ----------------------------------------------------------
-
-  function verifyQR(qrId) {
-
-    const callbackName =
-      "qrCallback_" + Date.now();
-
-    window[callbackName] = function(data) {
-
-      delete window[callbackName];
-
-      if (data.result === "SUCCESS") {
-
-        showSuccess(data);
-
-      } else if (data.result === "ALREADY USED") {
-
-        showAlreadyUsed(data);
-
-      } else if (data.result === "INVALID") {
-
-        showInvalid(data);
-
-      } else {
-
-        showError(
-          "Error",
-          data.message || "Something went wrong."
-        );
+        previousScan = usedAt;
       }
+    }
 
-      processing = false;
-    };
+    showResult(
+      "error",
+      "🔴",
+      "ALREADY USED",
+      name,
+      buildDetails(
+        qrId,
+        studentClass,
+        section,
+        coupon
+      ),
+      "This coupon has already been used." +
+      (previousScan
+        ? "<br><br><b>Previous scan:</b><br>" +
+          previousScan
+        : "")
+    );
 
-
-    const script = document.createElement("script");
-
-    script.src =
-      BACKEND_URL +
-      "?qr=" +
-      encodeURIComponent(qrId) +
-      "&callback=" +
-      callbackName;
-
-    script.onerror = function() {
-
-      delete window[callbackName];
-
-      showError(
-        "Connection Error",
-        "Could not connect to the Google server."
-      );
-
-      processing = false;
-    };
-
-    document.body.appendChild(script);
-
-    setTimeout(function() {
-
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-
-    }, 10000);
+    return;
   }
 
 
-  // ----------------------------------------------------------
-  // SUCCESS
-  // ----------------------------------------------------------
+  /* ---------- INVALID ---------- */
 
-  function showSuccess(data) {
-
-    resultBox.className = "success";
-
-    resultBox.innerHTML = `
-      <div class="icon">🟢</div>
-      <div class="message">SUCCESS</div>
-
-      <div class="name">
-        ${escapeHTML(data.studentName)}
-      </div>
-
-      <div class="className">
-        Class: ${escapeHTML(data.studentClass)}
-      </div>
-
-      <div class="message">
-        🎫 Coupon Accepted
-      </div>
-    `;
-
-    resultBox.style.display = "block";
-
-    setTimeout(startCamera, 2500);
-  }
-
-
-  // ----------------------------------------------------------
-  // ALREADY USED
-  // ----------------------------------------------------------
-
-  function showAlreadyUsed(data) {
-
-    resultBox.className = "already";
-
-    resultBox.innerHTML = `
-      <div class="icon">🔴</div>
-      <div class="message">ALREADY USED</div>
-
-      <div class="name">
-        ${escapeHTML(data.studentName)}
-      </div>
-
-      <div class="className">
-        Class: ${escapeHTML(data.studentClass)}
-      </div>
-
-      <div class="message">
-        This coupon has already been used.
-      </div>
-
-      <p>
-        Previous scan:<br>
-        ${escapeHTML(String(data.usedAt || ""))}
-      </p>
-    `;
-
-    resultBox.style.display = "block";
-
-    setTimeout(startCamera, 3000);
-  }
-
-
-  // ----------------------------------------------------------
-  // INVALID QR
-  // ----------------------------------------------------------
-
-  function showInvalid(data) {
-
-    resultBox.className = "invalid";
-
-    resultBox.innerHTML = `
-      <div class="icon">⚠️</div>
-      <div class="message">INVALID QR</div>
-
-      <p>
-        QR ID:
-        <strong>${escapeHTML(data.qrId || "")}</strong>
-      </p>
-
-      <p>Student record not found.</p>
-    `;
-
-    resultBox.style.display = "block";
-
-    setTimeout(startCamera, 3000);
-  }
-
-
-  // ----------------------------------------------------------
-  // LOADING
-  // ----------------------------------------------------------
-
-  function showLoading(qrId) {
-
-    resultBox.className = "";
-
-    resultBox.innerHTML = `
-      <div class="icon">🔍</div>
-      <div class="loading">
-        Checking QR...
-      </div>
-
-      <p>${escapeHTML(qrId)}</p>
-    `;
-
-    resultBox.style.display = "block";
-  }
-
-
-  // ----------------------------------------------------------
-  // ERROR
-  // ----------------------------------------------------------
-
-  function showError(title, message) {
-
-    resultBox.className = "invalid";
-
-    resultBox.innerHTML = `
-      <div class="icon">⚠️</div>
-      <div class="message">
-        ${escapeHTML(title)}
-      </div>
-
-      <p>
-        ${escapeHTML(message)}
-      </p>
-    `;
-
-    resultBox.style.display = "block";
-  }
-
-
-  // ----------------------------------------------------------
-  // SECURITY: ESCAPE TEXT
-  // ----------------------------------------------------------
-
-  function escapeHTML(value) {
-
-    return String(value || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-
-  startBtn.addEventListener(
-    "click",
-    startCamera
+  showResult(
+    "error",
+    "❌",
+    "INVALID QR",
+    name,
+    buildDetails(
+      qrId,
+      studentClass,
+      section,
+      coupon
+    ),
+    message || "This QR code is not valid."
   );
+}
 
-  stopBtn.addEventListener(
-    "click",
-    stopCamera
-  );
+
+/* =========================================================
+   STUDENT DETAILS
+   ========================================================= */
+
+function buildDetails(
+  qrId,
+  studentClass,
+  section,
+  coupon
+) {
+
+  let html = "";
+
+  if (studentClass) {
+
+    html +=
+      "<b>Class:</b> " +
+      escapeHtml(studentClass);
+  }
+
+  if (section) {
+
+    html +=
+      "<br><b>Section:</b> " +
+      escapeHtml(section);
+  }
+
+  if (qrId) {
+
+    html +=
+      "<br><b>QR ID:</b> " +
+      escapeHtml(qrId);
+  }
+
+  if (coupon !== "") {
+
+    html +=
+      "<br><b>Coupon:</b> " +
+      escapeHtml(String(coupon));
+  }
+
+  return html;
+}
+
+
+/* =========================================================
+   SHOW RESULT
+   ========================================================= */
+
+function showResult(
+  type,
+  icon,
+  title,
+  name,
+  details,
+  message
+) {
+
+  const result =
+    document.getElementById("result");
+
+  result.className = "";
+
+  result.classList.add(type);
+
+  result.style.display = "block";
+
+  document.getElementById("resultIcon")
+    .innerHTML = icon;
+
+  document.getElementById("resultTitle")
+    .innerHTML = title;
+
+  document.getElementById("studentName")
+    .innerHTML = escapeHtml(name);
+
+  document.getElementById("studentDetails")
+    .innerHTML = details;
+
+  document.getElementById("resultMessage")
+    .innerHTML = message;
+
+  document.getElementById("nextButton")
+    .style.display = "inline-block";
+
+  processing = false;
+}
+
+
+/* =========================================================
+   NEXT SCAN
+   ========================================================= */
+
+function nextScan() {
+
+  document.getElementById("result")
+    .style.display = "none";
+
+  document.getElementById("nextButton")
+    .style.display = "none";
+
+  processing = false;
+
+  startScanner();
+}
+
+
+/* =========================================================
+   STOP CAMERA
+   ========================================================= */
+
+function stopScanner() {
+
+  if (!scanner || !scanning) {
+
+    resetScannerButtons();
+
+    return;
+  }
+
+  scanner.stop()
+    .then(function() {
+
+      scanning = false;
+
+      resetScannerButtons();
+
+    })
+    .catch(function(error) {
+
+      console.error(error);
+
+      scanning = false;
+
+      resetScannerButtons();
+    });
+}
+
+
+/* =========================================================
+   RESET CAMERA BUTTONS
+   ========================================================= */
+
+function resetScannerButtons() {
+
+  document.getElementById("startButton")
+    .classList.remove("hidden");
+
+  document.getElementById("stopButton")
+    .classList.add("hidden");
+}
+
+
+/* =========================================================
+   SECURITY / HTML ESCAPING
+   ========================================================= */
+
+function escapeHtml(value) {
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 </script>
 
