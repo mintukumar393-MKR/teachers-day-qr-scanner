@@ -535,29 +535,30 @@ function processResult(data) {
 
   console.log("Server response:", data);
 
-  const name =
-    data.studentName || "";
+  const type = data.type || "STUDENT";
+  const isTeacher = type === "TEACHER";
 
-  const studentClass =
-    data.studentClass || "";
+  const name = isTeacher
+    ? (data.teacherName || "")
+    : (data.studentName || "");
 
-  const section =
-    data.section || "";
+  const qrId = data.qrId || "";
+  const usedAt = data.usedAt || "";
+  const message = data.message || "";
 
-  const qrId =
-    data.qrId || "";
+  // STUDENT DATA
+  const studentClass = data.studentClass || "";
+  const section = data.section || "";
+  const coupon = data.coupon || "";
 
-  const coupon =
-    data.coupon || "";
-
-  const usedAt =
-    data.usedAt || "";
-
-  const message =
-    data.message || "";
+  // TEACHER DATA
+  const designation = data.designation || "";
+  const department = data.department || "";
 
 
-  /* ---------- SUCCESS ---------- */
+  // ==========================================
+  // SUCCESS
+  // ==========================================
 
   if (
     data.success === true &&
@@ -567,84 +568,155 @@ function processResult(data) {
     showResult(
       "success",
       "✅",
-      "COUPON ACCEPTED",
+
+      isTeacher
+        ? "TEACHER VERIFIED"
+        : "COUPON ACCEPTED",
+
       name,
-      buildDetails(
-        qrId,
-        studentClass,
-        section,
-        coupon,
-        usedAt
-      ),
-      message || "Coupon accepted successfully."
+
+      isTeacher
+        ? buildTeacherDetails(
+            qrId,
+            designation,
+            department,
+            usedAt
+          )
+        : buildDetails(
+            qrId,
+            studentClass,
+            section,
+            coupon,
+            usedAt
+          ),
+
+      message ||
+      (
+        isTeacher
+          ? "Teacher verified successfully."
+          : "Coupon accepted successfully."
+      )
     );
 
     return;
   }
 
 
-  /* ---------- ALREADY USED ---------- */
+  // ==========================================
+  // ALREADY USED
+  // ==========================================
 
-  if (
-    data.result === "ALREADY USED"
-  ) {
+  if (data.result === "ALREADY USED") {
 
     let previousScan = "";
 
     if (usedAt) {
 
       try {
-
         previousScan =
           new Date(usedAt).toLocaleString();
-
-      } catch(e) {
-
+      } catch (e) {
         previousScan = usedAt;
       }
     }
+
 
     showResult(
       "error",
       "🔴",
       "ALREADY USED",
       name,
-      buildDetails(
-        qrId,
-        studentClass,
-        section,
-        coupon
-      ),
-      "This coupon has already been used." +
-      (previousScan
-        ? "<br><br><b>Previous scan:</b><br>" +
-          previousScan
-        : "")
+
+      isTeacher
+        ? buildTeacherDetails(
+            qrId,
+            designation,
+            department,
+            usedAt
+          )
+        : buildDetails(
+            qrId,
+            studentClass,
+            section,
+            coupon
+          ),
+
+      (
+        isTeacher
+          ? "This teacher QR has already been verified."
+          : "This coupon has already been used."
+      ) +
+
+      (
+        previousScan
+          ? "<br><br><b>Previous scan:</b><br>" +
+            escapeHtml(previousScan)
+          : ""
+      )
     );
 
     return;
   }
 
 
-  /* ---------- INVALID ---------- */
+  // ==========================================
+  // INVALID
+  // ==========================================
 
   showResult(
     "error",
     "❌",
     "INVALID QR",
-    name,
-    buildDetails(
-      qrId,
-      studentClass,
-      section,
-      coupon
-    ),
+    "",
+    qrId
+      ? "<b>QR ID:</b> " + escapeHtml(qrId)
+      : "",
     message || "This QR code is not valid."
   );
 }
+  function buildTeacherDetails(
+  qrId,
+  designation,
+  department,
+  usedAt
+) {
+  let html = "";
 
+  if (designation) {
+    html +=
+      "<b>Designation:</b> " +
+      escapeHtml(designation);
+  }
 
-/* =========================================================
+  if (department) {
+    html +=
+      "<br><b>Department:</b> " +
+      escapeHtml(department);
+  }
+
+  if (qrId) {
+    html +=
+      "<br><b>QR ID:</b> " +
+      escapeHtml(qrId);
+  }
+
+  if (usedAt) {
+    let scanTime = "";
+
+    try {
+      scanTime = new Date(usedAt).toLocaleString();
+    } catch (e) {
+      scanTime = usedAt;
+    }
+
+    html +=
+      "<br><b>Scan Time:</b> " +
+      escapeHtml(scanTime);
+  }
+
+  return html;
+}
+  /* =========================================================
    STUDENT DETAILS
    ========================================================= */
 
